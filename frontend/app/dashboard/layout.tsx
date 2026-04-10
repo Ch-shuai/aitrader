@@ -9,20 +9,24 @@ import {
   CogIcon,
   HomeIcon,
   LightBulbIcon,
-  TrendingUpIcon,
+  ArrowTrendingUpIcon,
   BoltIcon,
   BeakerIcon,
   CpuChipIcon,
+  ServerIcon,
+  GlobeAltIcon,
 } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
 const navigation = [
   { name: '首页', href: '/dashboard', icon: HomeIcon },
-  { name: '行情中心', href: '/dashboard/market', icon: ChartBarIcon },
+  { name: '行情中心', href: '/dashboard/stocks', icon: ChartBarIcon },
   { name: '因子中心', href: '/dashboard/factors', icon: BoltIcon },
   { name: '策略中心', href: '/dashboard/strategies', icon: LightBulbIcon },
-  { name: '交易信号', href: '/dashboard/signals', icon: TrendingUpIcon },
+  { name: '交易信号', href: '/dashboard/signals', icon: ArrowTrendingUpIcon },
   { name: '回测中心', href: '/dashboard/backtest', icon: BeakerIcon },
+  { name: '市场结构', href: '/dashboard/market', icon: GlobeAltIcon },
+  { name: 'ML预测', href: '/dashboard/ml', icon: ServerIcon },
   { name: '资讯中心', href: '/dashboard/news', icon: NewspaperIcon },
   { name: 'AI服务', href: '/dashboard/ai', icon: CpuChipIcon },
   { name: '设置', href: '/dashboard/settings', icon: CogIcon },

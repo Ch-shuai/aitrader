@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  TrendingUpIcon,
+  ArrowTrendingUpIcon,
   BoltIcon,
   LightBulbIcon,
   NewspaperIcon,
@@ -80,7 +80,7 @@ export default function DashboardPage() {
         <StatCard
           title="股票总数"
           value={stats.totalStocks}
-          icon={TrendingUpIcon}
+          icon={ArrowTrendingUpIcon}
           color="blue"
           href="/dashboard/market"
         />
