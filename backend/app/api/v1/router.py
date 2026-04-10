@@ -2,7 +2,7 @@
 API路由聚合
 """
 from fastapi import APIRouter
-from app.api.v1.endpoints import stocks, factors, strategies, signals, backtest, news, ai
+from app.api.v1.endpoints import stocks, factors, strategies, signals, backtest, news, ai, scheduler, sync
 
 api_router = APIRouter()
 
@@ -26,3 +26,9 @@ api_router.include_router(news.router, prefix="/news", tags=["资讯中心"])
 
 # AI相关
 api_router.include_router(ai.router, prefix="/ai", tags=["AI服务"])
+
+# 定时任务相关
+api_router.include_router(scheduler.router, prefix="/scheduler", tags=["定时任务"])
+
+# 数据同步相关
+api_router.include_router(sync.router, prefix="/sync", tags=["数据同步"])

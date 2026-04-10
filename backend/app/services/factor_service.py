@@ -169,14 +169,28 @@ class FactorService:
         """获取所有因子定义"""
         factors = []
         for category, groups in self.FACTOR_DEFINITIONS.items():
-            for group_name, group_factors in groups.items():
-                for code, name in group_factors.items():
-                    factors.append({
-                        "code": code,
-                        "name": name,
-                        "category": category,
-                        "group": group_name
-                    })
+            if isinstance(groups, dict):
+                # 检查是否是嵌套结构 (如 technical 有子分组)
+                first_val = next(iter(groups.values())) if groups else None
+                if isinstance(first_val, dict):
+                    # 嵌套结构: category -> group -> factors
+                    for group_name, group_factors in groups.items():
+                        for code, name in group_factors.items():
+                            factors.append({
+                                "code": code,
+                                "name": name,
+                                "category": category,
+                                "group": group_name
+                            })
+                else:
+                    # 扁平结构: category -> factors
+                    for code, name in groups.items():
+                        factors.append({
+                            "code": code,
+                            "name": name,
+                            "category": category,
+                            "group": category
+                        })
         return factors
 
     def calculate_technical_factors(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -423,6 +437,10 @@ class FactorService:
     def _save_factor(self, db: Session, code: str, date: date, name: str, value: float, group: str):
         """保存单个因子"""
         try:
+            # 检查是否为有效数值
+            if value is None or pd.isna(value) or not np.isfinite(value):
+                return
+
             existing = db.query(FactorData).filter(
                 FactorData.code == code,
                 FactorData.date == date,
@@ -440,7 +458,10 @@ class FactorService:
                     factor_group=group
                 )
                 db.add(factor)
-        except:
+        except Exception as e:
+            # 记录错误但不中断流程
+            import logging
+            logging.getLogger(__name__).debug(f"保存因子失败 {code} {name}: {e}")
             pass
 
     def calculate_correlation(self, db: Session, code: str, factor_names: List[str], days: int = 252) -> Dict:
@@ -525,4 +546,101 @@ class FactorService:
             "rank_ic": float(rank_ic) if not pd.isna(rank_ic) else 0,
             "ic_abs": abs(float(ic)) if not pd.isna(ic) else 0,
             "interpretation": "强相关" if abs(ic) > 0.3 else "中等相关" if abs(ic) > 0.1 else "弱相关"
+        }
+
+    def batch_calculate_all_factors(
+        self,
+        db: Session,
+        codes: Optional[List[str]] = None,
+        category: Optional[str] = None,
+        batch_size: int = 100
+    ) -> Dict:
+        """
+        批量计算所有股票因子
+
+        Args:
+            db: 数据库会话
+            codes: 指定股票代码列表，None则计算所有股票
+            category: 指定因子类别，None则计算所有类别
+            batch_size: 每批处理的股票数量
+
+        Returns:
+            计算结果统计
+        """
+        from app.core.database import Stock
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # 获取股票列表
+        if codes:
+            stocks = db.query(Stock).filter(Stock.code.in_(codes)).all()
+        else:
+            stocks = db.query(Stock).all()
+
+        if not stocks:
+            return {"error": "没有可处理的股票"}
+
+        results = {
+            "total": len(stocks),
+            "success": 0,
+            "failed": 0,
+            "total_factors": 0,
+            "errors": []
+        }
+
+        logger.info(f"开始批量计算因子，共 {len(stocks)} 只股票")
+
+        for i, stock in enumerate(stocks):
+            try:
+                count = self.calculate_and_save_factors(
+                    db=db,
+                    code=stock.code,
+                    category=category
+                )
+
+                results["success"] += 1
+                results["total_factors"] += count
+
+                # 每处理 batch_size 只股票提交一次
+                if (i + 1) % batch_size == 0:
+                    db.commit()
+                    logger.info(f"已处理 {i + 1}/{len(stocks)} 只股票")
+
+            except Exception as e:
+                results["failed"] += 1
+                error_msg = f"{stock.code}: {str(e)}"
+                results["errors"].append(error_msg)
+                logger.error(f"计算 {stock.code} 因子失败: {e}")
+
+        # 最后提交一次
+        db.commit()
+
+        logger.info(f"批量计算完成: 成功 {results['success']}, 失败 {results['failed']}")
+        return results
+
+    def get_factor_coverage(self, db: Session) -> Dict:
+        """
+        获取因子覆盖统计
+
+        Returns:
+            各因子类别的覆盖情况
+        """
+        from sqlalchemy import func
+
+        stats = db.query(
+            FactorData.factor_group,
+            func.count(FactorData.id).label('count'),
+            func.count(FactorData.code.distinct()).label('stocks')
+        ).group_by(FactorData.factor_group).all()
+
+        return {
+            "total_records": sum(s.count for s in stats),
+            "coverage_by_group": [
+                {
+                    "group": s.factor_group,
+                    "records": s.count,
+                    "stocks": s.stocks
+                }
+                for s in stats
+            ]
         }

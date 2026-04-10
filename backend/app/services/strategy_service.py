@@ -48,15 +48,15 @@ class StrategyService:
 
         for stock in stocks[:100]:  # 限制处理数量
             try:
-                # 获取因子数据
+                # 获取PE数据
                 latest_factor = db.query(FactorData).filter(
                     FactorData.code == stock.code,
                     FactorData.factor_name == "pe_ttm"
                 ).order_by(FactorData.date.desc()).first()
 
                 if latest_factor and latest_factor.factor_value < pe_max and latest_factor.factor_value > 0:
-                    # 简化F-Score计算 - 实际应使用财务数据
-                    f_score = 7  # 假设
+                    # 计算真实的 F-Score
+                    f_score = self._calculate_f_score(stock.code, db)
 
                     if f_score >= fscore_threshold:
                         signal = self._create_signal(
@@ -453,3 +453,98 @@ class StrategyService:
             return 2
         else:
             return 1
+
+    def _get_financial_data(self, code: str) -> Optional[Dict]:
+        """
+        获取财务数据用于F-Score计算
+        
+        Returns:
+            包含财务指标的字典，获取失败返回None
+        """
+        try:
+            import akshare as ak
+            
+            # 获取最新财务指标
+            fin_data = ak.stock_financial_analysis_indicator(symbol=code)
+            if fin_data is None or fin_data.empty:
+                return None
+            
+            latest = fin_data.iloc[0]
+            
+            # 获取上一期数据进行对比
+            prev = fin_data.iloc[1] if len(fin_data) > 1 else None
+            
+            return {
+                "roa": float(latest.get("总资产报酬率", 0)),
+                "cfo": float(latest.get("经营活动产生的现金流量净额", 0)),
+                "debt_ratio": float(latest.get("资产负债率", 0)),
+                "current_ratio": float(latest.get("流动比率", 0)),
+                "shares": float(latest.get("总股本", 0)),
+                "gross_margin": float(latest.get("销售毛利率", 0)),
+                "asset_turnover": float(latest.get("总资产周转率", 0)),
+                # 上期数据
+                "prev_roa": float(prev.get("总资产报酬率", 0)) if prev is not None else 0,
+                "prev_debt_ratio": float(prev.get("资产负债率", 0)) if prev is not None else 100,
+                "prev_current_ratio": float(prev.get("流动比率", 0)) if prev is not None else 0,
+                "prev_shares": float(prev.get("总股本", 0)) if prev is not None else 0,
+                "prev_gross_margin": float(prev.get("销售毛利率", 0)) if prev is not None else 0,
+                "prev_asset_turnover": float(prev.get("总资产周转率", 0)) if prev is not None else 0,
+            }
+        except Exception as e:
+            return None
+    
+    def _calculate_f_score(self, code: str, db: Session) -> int:
+        """
+        计算Piotroski F-Score
+        
+        F-Score是一个0-9分的财务健康评分:
+        - 盈利能力指标 (4分)
+        - 杠杆/流动性指标 (3分)
+        - 效率指标 (2分)
+        
+        Returns:
+            0-9的整数分数
+        """
+        fin = self._get_financial_data(code)
+        if fin is None:
+            return 0
+        
+        score = 0
+        
+        # 1. ROA > 0 (资产回报率正)
+        if fin["roa"] > 0:
+            score += 1
+        
+        # 2. CFO > 0 (经营现金流正)
+        if fin["cfo"] > 0:
+            score += 1
+        
+        # 3. ROA同比改善
+        if fin["roa"] > fin["prev_roa"]:
+            score += 1
+        
+        # 4. CFO > ROA*总资产 (简化: CFO > 净利润，这里用ROA近似)
+        if fin["cfo"] > 0 and fin["roa"] > 0:
+            score += 1
+        
+        # 5. 负债率同比下降
+        if fin["debt_ratio"] < fin["prev_debt_ratio"]:
+            score += 1
+        
+        # 6. 流动比率同比改善
+        if fin["current_ratio"] > fin["prev_current_ratio"]:
+            score += 1
+        
+        # 7. 未增发新股 (股本未增加)
+        if fin["shares"] <= fin["prev_shares"]:
+            score += 1
+        
+        # 8. 毛利率同比改善
+        if fin["gross_margin"] > fin["prev_gross_margin"]:
+            score += 1
+        
+        # 9. 资产周转率同比改善
+        if fin["asset_turnover"] > fin["prev_asset_turnover"]:
+            score += 1
+        
+        return score

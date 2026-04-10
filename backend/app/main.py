@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.database import init_db
 from app.api.v1.router import api_router
-from app.tasks.scheduler import start_scheduler, stop_scheduler
+from app.services.scheduler_service import scheduler_service
 import uvicorn
 
 
@@ -17,12 +17,12 @@ async def lifespan(app: FastAPI):
     # 启动
     print("🚀 启动 A股智能研究与交易平台...")
     init_db()
-    start_scheduler()
+    scheduler_service.start()
     print("✅ 系统初始化完成")
     yield
     # 关闭
     print("👋 正在关闭系统...")
-    stop_scheduler()
+    scheduler_service.shutdown()
 
 
 app = FastAPI(
