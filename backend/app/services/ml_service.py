@@ -184,10 +184,18 @@ class MLService:
         precision = precision_score(y_test, y_pred, zero_division=0)
         recall = recall_score(y_test, y_pred, zero_division=0)
 
+        # 转换numpy类型为Python原生类型
+        accuracy = float(accuracy)
+        precision = float(precision)
+        recall = float(recall)
+
+        # 转换列名为字符串
+        feature_cols = [str(c) for c in X.columns]
+
         # 保存模型
         self.models[code] = {
             'model': model,
-            'feature_cols': list(X.columns),
+            'feature_cols': feature_cols,
             'metrics': {
                 'accuracy': accuracy,
                 'precision': precision,
@@ -195,18 +203,18 @@ class MLService:
             }
         }
 
-        # 特征重要性
-        importance = dict(zip(X.columns, model.feature_importances_))
+        # 特征重要性 - 确保键和值都是原生Python类型
+        importance = {str(k): float(v) for k, v in zip(feature_cols, model.feature_importances_)}
 
         return {
             "code": code,
             "model_type": model_type,
-            "train_samples": len(X_train),
-            "test_samples": len(X_test),
-            "accuracy": round(accuracy, 4),
-            "precision": round(precision, 4),
-            "recall": round(recall, 4),
-            "feature_importance": dict(sorted(importance.items(), key=lambda x: x[1], reverse=True)[:5])
+            "train_samples": int(len(X_train)),
+            "test_samples": int(len(X_test)),
+            "accuracy": float(round(accuracy, 4)),
+            "precision": float(round(precision, 4)),
+            "recall": float(round(recall, 4)),
+            "feature_importance": {k: float(round(v, 4)) for k, v in sorted(importance.items(), key=lambda x: x[1], reverse=True)[:5]}
         }
 
     def predict(
@@ -264,17 +272,24 @@ class MLService:
         # 判断趋势强度
         trend_strength = abs(probability[1] - 0.5) * 2  # 0-1之间
 
+        # 转换为Python原生类型
+        prediction_val = int(prediction)
+        prob_max = float(max(probability))
+        prob_up = float(probability[1])
+        trend_str = float(trend_strength)
+        model_acc = float(model_info['metrics']['accuracy'])
+
         return {
             "code": code,
-            "prediction": "上涨" if prediction == 1 else "下跌",
-            "confidence": round(max(probability), 4),
-            "up_probability": round(probability[1], 4),
-            "trend_strength": round(trend_strength, 4),
-            "model_accuracy": round(model_info['metrics']['accuracy'], 4),
+            "prediction": "上涨" if prediction_val == 1 else "下跌",
+            "confidence": float(round(prob_max, 4)),
+            "up_probability": float(round(prob_up, 4)),
+            "trend_strength": float(round(trend_str, 4)),
+            "model_accuracy": float(round(model_acc, 4)),
             "factors": {
-                "recent_return": round(df['close'].pct_change(20).iloc[-1] * 100, 2),
-                "rsi": round(df['rsi_14'].iloc[-1], 2) if 'rsi_14' in df.columns else None,
-                "volatility": round(df['volatility_20'].iloc[-1] * 100, 2) if 'volatility_20' in df.columns else None
+                "recent_return": float(round(df['close'].pct_change(20).iloc[-1] * 100, 2)),
+                "rsi": float(round(df['rsi_14'].iloc[-1], 2)) if 'rsi_14' in df.columns else None,
+                "volatility": float(round(df['volatility_20'].iloc[-1] * 100, 2)) if 'volatility_20' in df.columns else None
             }
         }
 
