@@ -186,15 +186,19 @@ class SchedulerService:
     def get_jobs(self):
         """获取所有任务"""
         jobs = self.scheduler.get_jobs()
-        return [
-            {
+        result = []
+        for job in jobs:
+            try:
+                next_run = job.next_run_time.strftime("%Y-%m-%d %H:%M:%S") if job.next_run_time else None
+            except:
+                next_run = None
+            result.append({
                 "id": job.id,
                 "name": job.name,
-                "next_run_time": job.next_run_time.strftime("%Y-%m-%d %H:%M:%S") if job.next_run_time else None,
+                "next_run_time": next_run,
                 "trigger": str(job.trigger)
-            }
-            for job in jobs
-        ]
+            })
+        return result
 
     def run_job_now(self, job_id: str):
         """立即运行某个任务"""
