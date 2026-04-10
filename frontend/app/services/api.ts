@@ -151,4 +151,45 @@ export const aiApi = {
   getModelsStatus: () => api.get('/ai/models/status'),
 };
 
+// Scheduler API
+export const schedulerApi = {
+  getJobs: () => api.get('/scheduler/jobs'),
+  start: () => api.post('/scheduler/start'),
+  stop: () => api.post('/scheduler/stop'),
+  getStatus: () => api.get('/scheduler/status'),
+  runJob: (jobId: string) => api.post(`/scheduler/run/${jobId}`),
+};
+
+// Sync API
+export const syncApi = {
+  initialize: () => api.post('/sync/initialize'),
+  dailyUpdate: () => api.post('/sync/daily-update'),
+  getStatus: () => api.get('/sync/status'),
+  syncStocks: () => api.post('/sync/stocks'),
+  syncPrices: (code?: string) => api.post('/sync/prices', { code }),
+  calculateFactors: (code?: string) => api.post('/sync/factors', { code }),
+};
+
+// ML API
+export const mlApi = {
+  trainModel: (code: string, modelType?: string) =>
+    api.post(`/ml/train/${code}`, null, { params: { model_type: modelType } }),
+  batchTrain: (maxStocks?: number) =>
+    api.post('/ml/batch-train', null, { params: { max_stocks: maxStocks } }),
+  predict: (code: string, daysAhead?: number) =>
+    api.get(`/ml/predict/${code}`, { params: { days_ahead: daysAhead } }),
+  getPerformance: (code?: string) =>
+    api.get('/ml/performance', { params: { code } }),
+  getStatus: () => api.get('/ml/status'),
+};
+
+// Market API
+export const marketApi = {
+  getEnvironment: () => api.get('/market/environment'),
+  getSectors: (days?: number) => api.get('/market/sectors', { params: { days } }),
+  getSentiment: () => api.get('/market/sentiment'),
+  getRiskWarning: (code: string) => api.get(`/market/risk-warning/${code}`),
+  getOverview: () => api.get('/market/overview'),
+};
+
 export default api;

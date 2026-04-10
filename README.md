@@ -34,13 +34,32 @@
 - 智能选股
 - AI 问答助手
 
+### 机器学习预测
+- XGBoost 预测模型
+- 自动模型训练
+- 涨跌概率预测
+- 批量模型训练
+
+### 市场结构分析
+- 市场环境评估 (强势/震荡/弱势)
+- 板块轮动检测
+- 综合情绪指数
+- 个股风险预警
+
+### 定时任务
+- 每日收盘后自动同步数据
+- 自动计算因子
+- 定时同步新闻
+- 过期数据清理
+
 ## 技术架构
 
 ### 后端
 - **框架**: FastAPI (Python)
 - **数据库**: SQLite (本地存储)
 - **数据源**: AkShare (A股实时/历史数据)
-- **AI 模型**: Anthropic Claude + 本地 ML 模型
+- **AI 模型**: Anthropic Claude + XGBoost + 本地 ML
+- **定时任务**: APScheduler
 
 ### 前端
 - **框架**: Next.js 14 + React 18
@@ -50,66 +69,102 @@
 
 ## 快速开始
 
-### 1. 安装依赖
+### 1. 克隆仓库
 
 ```bash
-# 后端
-cd backend
-pip install -r requirements.txt
-
-# 前端
-cd frontend
-npm install
+git clone https://github.com/Ch-shuai/aitrader.git
+cd aitrader
 ```
 
 ### 2. 启动服务
 
 ```bash
-# 方式1: 使用启动脚本
+# 使用启动脚本（推荐）
 ./start.sh
 
-# 方式2: 手动启动
-# 终端1 - 后端
+# 或手动启动
+# 后端
 cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 
-# 终端2 - 前端
+# 前端
 cd frontend
+npm install
 npm run dev
 ```
 
 ### 3. 访问平台
 
-- 前端: http://localhost:3000
-- 后端 API: http://localhost:8000
-- API 文档: http://localhost:8000/docs
+- **前端界面**: http://localhost:3000
+- **后端 API**: http://localhost:8000
+- **API 文档**: http://localhost:8000/docs
 
 ## 使用流程
 
-### 1. 初始化数据
-```
-行情中心 → 同步股票数据 → 同步历史行情
-```
+### 首次使用
 
-### 2. 运行策略
-```
-策略中心 → 选择策略 → 启动/运行 → 生成信号
-```
+1. **初始化数据**
+   ```
+   访问: http://localhost:3000/dashboard
+   进入 "数据同步" 页面
+   点击 "初始化数据" 按钮
+   ```
 
-### 3. 查看信号
-```
-交易信号 → 查看高等级买点 (4-5级)
-```
+2. **查看市场环境**
+   ```
+   进入 "市场结构" 页面
+   查看当前市场环境和情绪指数
+   ```
 
-### 4. 回测验证
-```
-回测中心 → 选择策略 → 设置参数 → 运行回测
-```
+### 日常使用
 
-### 5. AI 分析
-```
-AI服务 → 输入股票代码 → 获取分析报告
-```
+1. **运行策略**
+   ```
+   策略中心 → 选择策略 → 启动/运行 → 生成信号
+   ```
+
+2. **查看信号**
+   ```
+   交易信号 → 查看高等级买点 (4-5级)
+   ```
+
+3. **AI 分析**
+   ```
+   AI服务 → 输入股票代码 → 获取分析报告
+   或 ML预测 → 训练模型 → 查看预测结果
+   ```
+
+4. **回测验证**
+   ```
+   回测中心 → 选择策略 → 设置参数 → 运行回测
+   ```
+
+## API 文档
+
+### 主要 API 端点
+
+| 端点 | 功能 |
+|------|------|
+| `GET /api/v1/stocks/` | 股票列表 |
+| `GET /api/v1/stocks/{code}/prices` | 历史行情 |
+| `GET /api/v1/factors/categories` | 因子分类 |
+| `POST /api/v1/factors/calculate/{code}` | 计算因子 |
+| `GET /api/v1/strategies/list` | 策略列表 |
+| `POST /api/v1/strategies/{id}/run` | 运行策略 |
+| `GET /api/v1/signals/today` | 今日信号 |
+| `GET /api/v1/signals/high-grade` | 高等级信号 |
+| `POST /api/v1/backtest/run` | 运行回测 |
+| `POST /api/v1/ml/train/{code}` | 训练ML模型 |
+| `GET /api/v1/ml/predict/{code}` | 预测走势 |
+| `GET /api/v1/market/environment` | 市场环境 |
+| `GET /api/v1/market/sentiment` | 市场情绪 |
+| `POST /api/v1/sync/initialize` | 初始化数据 |
+| `GET /api/v1/scheduler/jobs` | 定时任务 |
+
+完整 API 文档: http://localhost:8000/docs
 
 ## 项目结构
 
@@ -120,6 +175,15 @@ aitrader/
 │   │   ├── api/v1/endpoints/  # API 路由
 │   │   ├── core/              # 配置与数据库
 │   │   ├── services/          # 业务逻辑
+│   │   │   ├── data_service.py      # 数据同步
+│   │   │   ├── factor_service.py    # 因子计算
+│   │   │   ├── strategy_service.py  # 策略执行
+│   │   │   ├── backtest_service.py  # 回测引擎
+│   │   │   ├── ai_service.py        # AI分析
+│   │   │   ├── ml_service.py        # 机器学习
+│   │   │   ├── market_service.py    # 市场结构
+│   │   │   ├── scheduler_service.py # 定时任务
+│   │   │   └── sync_service.py      # 数据同步
 │   │   └── main.py            # 应用入口
 │   └── requirements.txt
 ├── frontend/              # Next.js 前端
@@ -129,77 +193,69 @@ aitrader/
 │   │   └── globals.css        # 全局样式
 │   └── package.json
 ├── data/                  # 数据存储 (SQLite)
+├── test_features.py       # 功能测试脚本
 └── README.md
 ```
-
-## API 文档
-
-### 股票数据
-- `GET /api/v1/stocks/` - 股票列表
-- `GET /api/v1/stocks/{code}` - 股票详情
-- `GET /api/v1/stocks/{code}/prices` - 历史行情
-- `POST /api/v1/stocks/sync/list` - 同步股票列表
-- `POST /api/v1/stocks/sync/prices` - 同步行情
-
-### 因子中心
-- `GET /api/v1/factors/categories` - 因子分类
-- `GET /api/v1/factors/list` - 因子列表
-- `POST /api/v1/factors/calculate/{code}` - 计算因子
-- `GET /api/v1/factors/{code}/values` - 因子值
-- `GET /api/v1/factors/screening/rank` - 因子筛选
-
-### 策略中心
-- `GET /api/v1/strategies/list` - 策略列表
-- `POST /api/v1/strategies/create` - 创建策略
-- `POST /api/v1/strategies/{id}/start` - 启动策略
-- `POST /api/v1/strategies/{id}/run` - 运行策略
-
-### 交易信号
-- `GET /api/v1/signals/list` - 信号列表
-- `GET /api/v1/signals/today` - 今日信号
-- `GET /api/v1/signals/high-grade` - 高等级信号
-
-### 回测中心
-- `POST /api/v1/backtest/run` - 运行回测
-- `GET /api/v1/backtest/results` - 回测结果
-- `POST /api/v1/backtest/optimize/{id}` - 参数优化
-
-### AI 服务
-- `POST /api/v1/ai/analyze-stock` - 股票分析
-- `POST /api/v1/ai/analyze-market` - 市场分析
-- `POST /api/v1/ai/chat` - AI 对话
 
 ## 配置说明
 
 ### 环境变量 (.env)
 ```env
-# AI 配置
-ANTHROPIC_API_KEY=your_api_key
+# AI 配置 (可选)
+ANTHROPIC_API_KEY=sk-ant-api03-your-api-key
 
-# 数据库
-DATABASE_URL=sqlite:///data/aitrader.db
+# 服务器配置
+HOST=0.0.0.0
+PORT=8000
+DEBUG=true
 
-# 数据源
-TUSHARE_TOKEN=your_token
+# 风控参数
+MAX_POSITION_PCT=0.2
+STOP_LOSS_PCT=0.07
+TAKE_PROFIT_PCT=0.15
 ```
 
-### 风控参数
-- 单票最大仓位: 20%
-- 止损线: 7%
-- 止盈线: 15%
-- 最大回撤: 15%
+### 定时任务配置
 
-## 开发计划
+默认定时任务:
+- **15:30** - 同步股票列表
+- **15:45** - 同步日线行情
+- **16:00** - 计算因子
+- **每小时** - 同步新闻
+- **每周一 9:00** - 清理过期数据
+
+## 功能测试
+
+```bash
+cd /Users/ch_shuai/Desktop/cc_home/aitrader
+source backend/venv/bin/activate
+python test_features.py
+```
+
+## 开发路线图
 
 - [x] 项目架构搭建
 - [x] 数据库模型设计
 - [x] 后端 API 开发
 - [x] 前端界面开发
-- [ ] 数据自动更新
-- [ ] 更多策略实现
-- [ ] ML 模型训练
+- [x] 14大核心策略
+- [x] 561因子体系
+- [x] 定时任务调度
+- [x] 数据同步自动化
+- [x] F-Score财务数据
+- [x] XGBoost ML模型
+- [x] 市场结构分析
+- [ ] 更多策略优化
 - [ ] 实盘交易接口
 
 ## 许可证
 
 MIT
+
+## 贡献
+
+欢迎提交 Issue 和 Pull Request!
+
+## 联系方式
+
+GitHub: https://github.com/Ch-shuai/aitrader
