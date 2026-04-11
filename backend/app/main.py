@@ -17,6 +17,9 @@ async def lifespan(app: FastAPI):
     # 启动
     print("🚀 启动 A股智能研究与交易平台...")
     init_db()
+    # 初始化日志系统
+    from app.core.logger import init_logging
+    init_logging()
     scheduler_service.start()
     print("✅ 系统初始化完成")
     yield

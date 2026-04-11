@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class LocalDataService:
     """本地数据导入服务"""
 
-    def __init__(self, data_path: str = "/Users/ch_shuai/Desktop/stock-source-前复权/前复权"):
+    def __init__(self, data_path: str = "/Users/ch_shuai/Desktop/stock-source/前复权"):
         self.data_path = data_path
 
     def discover_stocks(self) -> List[str]:
@@ -76,6 +76,11 @@ class LocalDataService:
                 '振幅%': 'amplitude',
                 '是否ST': 'is_st',
                 '量比': 'volume_ratio',
+                '3日涨幅%': 'return_3d',
+                '6日涨幅%': 'return_6d',
+                '10日涨幅%': 'return_10d',
+                '25日涨幅%': 'return_25d',
+                '是否涨停': 'is_limit_up',
                 '总股本（股）': 'total_shares',
                 '流通股本（股）': 'float_shares',
                 '总市值（元）': 'total_market_cap',
@@ -86,8 +91,12 @@ class LocalDataService:
                 '5日线': 'ma5',
                 '10日线': 'ma10',
                 '20日线': 'ma20',
+                '30日线': 'ma30',
                 '60日线': 'ma60',
+                '120日线': 'ma120',
+                '250日线': 'ma250',
                 '上市时间': 'list_date',
+                '退市时间': 'delist_date',
             }
 
             df = df.rename(columns=column_mapping)

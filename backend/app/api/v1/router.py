@@ -2,7 +2,8 @@
 API路由聚合
 """
 from fastapi import APIRouter
-from app.api.v1.endpoints import stocks, factors, strategies, signals, backtest, news, ai, scheduler, sync, ml, market, localdata
+from app.api.v1.endpoints import stocks, factors, strategies, signals, backtest, news, ai, scheduler, sync, ml, market, localdata, logs
+from app.api.v1.endpoints.strategy_optimizer import router as optimizer_router
 
 api_router = APIRouter()
 
@@ -41,3 +42,9 @@ api_router.include_router(market.router, prefix="/market", tags=["市场结构"]
 
 # 本地数据相关
 api_router.include_router(localdata.router, prefix="/localdata", tags=["本地数据导入"])
+
+# 日志系统相关
+api_router.include_router(logs.router, prefix="/logs", tags=["系统日志"])
+
+# 策略优化相关
+api_router.include_router(optimizer_router, prefix="/optimizer", tags=["策略优化"])
