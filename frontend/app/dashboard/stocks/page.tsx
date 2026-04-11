@@ -14,6 +14,7 @@ export default function StocksPage() {
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadStocks();
@@ -22,10 +23,14 @@ export default function StocksPage() {
   const loadStocks = async () => {
     try {
       setLoading(true);
+      setError(null);
+      console.log('Loading stocks...');
       const res = await stockApi.getStocks();
+      console.log('Stocks response:', res.data);
       setStocks(res.data?.items || []);
-    } catch (error) {
-      console.error('Failed to load stocks:', error);
+    } catch (err: any) {
+      console.error('Failed to load stocks:', err);
+      setError(err.message || '加载失败');
     } finally {
       setLoading(false);
     }
@@ -58,6 +63,18 @@ export default function StocksPage() {
           <span className="text-sm text-gray-500">共 {stocks.length} 只</span>
         </div>
         <div className="overflow-x-auto">
+          {error && (
+            <div className="p-4 bg-red-50 text-red-600 rounded-lg mb-4">
+              <p className="font-medium">加载失败</p>
+              <p className="text-sm">{error}</p>
+              <button
+                onClick={loadStocks}
+                className="mt-2 text-sm underline hover:no-underline"
+              >
+                重试
+              </button>
+            </div>
+          )}
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
