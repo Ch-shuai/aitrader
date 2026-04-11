@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -12,7 +12,7 @@ const api = axios.create({
 // Stock API
 export const stockApi = {
   getStocks: (params?: { industry?: string; market?: string }) =>
-    api.get('/stocks/', { params }),
+    api.get('/stocks', { params }),
   getStockDetail: (code: string) => api.get(`/stocks/${code}`),
   getStockPrices: (code: string, days?: number) =>
     api.get(`/stocks/${code}/prices`, { params: { days } }),
