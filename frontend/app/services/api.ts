@@ -12,7 +12,7 @@ const api = axios.create({
 // Stock API
 export const stockApi = {
   getStocks: (params?: { industry?: string; market?: string }) =>
-    api.get('/stocks', { params }),
+    api.get('/stocks/', { params }),
   getStockDetail: (code: string) => api.get(`/stocks/${code}`),
   getStockPrices: (code: string, days?: number) =>
     api.get(`/stocks/${code}/prices`, { params: { days } }),
